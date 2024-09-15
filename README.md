@@ -27,3 +27,5 @@ https://github.com/n1sk4/nodemcu-server/blob/662db253dc016a46c92e234adbb7616733e
 https://github.com/n1sk4/nodemcu-server/blob/662db253dc016a46c92e234adbb7616733e5beaa/src/main.cpp#L12-L26
  * Build and Upload the project
 
+LED's in the project are connected as seen in the schematics bellow (I had a RGB LED that was configured with a common anode)
+![nodemcu-server](https://github.com/user-attachments/assets/d19526ea-40ce-4efc-8679-5ae46fcfa7a6)
