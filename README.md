@@ -22,9 +22,10 @@ Using VS Code:
      * -> Project Tasks -> Platform -> Build Filesystem Image
      * -> Project Tasks -> Platform -> Upload Filesystem Image
  * Change these two lines to match your WiFi and it's password:
-https://github.com/n1sk4/nodemcu-server/blob/662db253dc016a46c92e234adbb7616733e5beaa/src/main.cpp#L9-L10
- * Change D0, D1, D2 with your GPIO's here:
-https://github.com/n1sk4/nodemcu-server/blob/662db253dc016a46c92e234adbb7616733e5beaa/src/main.cpp#L12-L26
+ https://github.com/n1sk4/nodemcu-server/blob/d1f40ccb82a65ed970c7abc552b5c00be45f87e3/src/main.cpp#L8-L9
+
+ * Change D5, D6, D7 with your GPIO's here:
+ https://github.com/n1sk4/nodemcu-server/blob/d1f40ccb82a65ed970c7abc552b5c00be45f87e3/src/main.cpp#L10-L14
  * Build and Upload the project
 
 LED's in the project are connected as seen in the schematics bellow (I had a RGB LED that was configured with a common anode)
