@@ -25,7 +25,7 @@ Using VS Code:
  https://github.com/n1sk4/nodemcu-server/blob/d1f40ccb82a65ed970c7abc552b5c00be45f87e3/src/main.cpp#L8-L9
 
  * Change D5, D6, D7 with your GPIO's here:
- https://github.com/n1sk4/nodemcu-server/blob/d1f40ccb82a65ed970c7abc552b5c00be45f87e3/src/main.cpp#L10-L14
+ https://github.com/n1sk4/nodemcu-server/blob/18c87bc8783e3671fa59fd175468bad393550cb9/src/main.cpp#L16-L18
  * Build and Upload the project
 
 LED's in the project are connected as seen in the schematics bellow (I had a RGB LED that was configured with a common anode)
