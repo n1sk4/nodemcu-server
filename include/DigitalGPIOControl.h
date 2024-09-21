@@ -6,12 +6,31 @@
 #include <Arduino.h>
 #include <map>
 #include <vector>
+#include <algorithm>
+#include <ESP8266WiFi.h>
+#include <ESPAsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <FS.h>
+#include <LittleFS.h>
+
+#define SERVER_ON_LED(led_num) \
+  m_server->on("/led" #led_num "on", HTTP_GET, [&](AsyncWebServerRequest *request) { \
+    serverOnLED(m_outputs[led_num-1], HIGH, request); \
+  }); \
+  m_server->on("/led" #led_num "off", HTTP_GET, [&](AsyncWebServerRequest *request) { \
+    serverOnLED(m_outputs[led_num-1], LOW, request); \
+  });
 
 struct DigitalOutput{
   uint8_t pinName;
   String  name;
   String  additionalData;
-  uint8_t    state;
+  uint8_t state;
+};
+
+struct WiFiSettings{
+  const char* ssid;
+  const char* password;
 };
 
 typedef std::vector<DigitalOutput> DigitalOutputs;
@@ -20,7 +39,10 @@ typedef std::vector<uint8_t> States;
 class DigitalGPIOControl{
 public:
   DigitalGPIOControl(DigitalOutputs& outputs);
+  DigitalGPIOControl(DigitalOutputs& outputs, AsyncWebServer& server, WiFiSettings ws);
 
+  bool init();
+  
   void SetHigh();
   void SetLow();
   void SetHigh(DigitalOutput& output);
@@ -29,9 +51,19 @@ public:
   uint8_t GetState(const DigitalOutput& output);
   bool IsItName(const String& var);
   bool IsItAdditionalData(const String& var); 
-  void Init();
+
+  //Server
+  void setSSID(const char& ssid);
+  void setPassword(const char& password);
+  String LEDControl(const String& var);
+  String getLEDColor(const String& var);
+  String processor(const String& var);
+  void serverOnLED(DigitalOutput& pin, uint8_t state, AsyncWebServerRequest *request);
+  void initSerial();
 private:
-  DigitalOutputs m_outputs;
+  DigitalOutputs  m_outputs;
+  AsyncWebServer* m_server;
+  WiFiSettings    m_WiFiSettings;
   void SetOutputs();
 };
 
