@@ -12,14 +12,8 @@
 #include <ESPAsyncWebServer.h>
 #include <FS.h>
 #include <LittleFS.h>
-
-#define SERVER_ON_LED(led_num) \
-  m_server->on("/led" #led_num "on", HTTP_GET, [&](AsyncWebServerRequest *request) { \
-    serverOnLED(m_outputs[led_num-1], HIGH, request); \
-  }); \
-  m_server->on("/led" #led_num "off", HTTP_GET, [&](AsyncWebServerRequest *request) { \
-    serverOnLED(m_outputs[led_num-1], LOW, request); \
-  });
+#include <ArduinoJson.h>
+#include <functional>
 
 struct DigitalOutput{
   uint8_t pinName;
@@ -65,6 +59,14 @@ private:
   AsyncWebServer* m_server;
   WiFiSettings    m_WiFiSettings;
   void SetOutputs();
+  String getLEDData();
+
+  const char* uri;
+  String temp;
+  void onLED(long index);
+  void offLED(long index);
+  typedef std::function<void(long)> onLED_t;
+  void repeatServerOnLED(onLED_t fn, long n);
 };
 
 #endif

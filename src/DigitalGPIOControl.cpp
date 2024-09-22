@@ -40,17 +40,43 @@ bool DigitalGPIOControl::init(){
     request->send(LittleFS, "/index.html", String(), false, boundProcessor);
   });
 
+  m_server->on("/getLeds", HTTP_GET, [&](AsyncWebServerRequest *request) {
+    String json = getLEDData();
+    request->send(200, "application/json", json);
+  });
+
   m_server->on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(LittleFS, "/style.css", "text/css");
   });
-  
-  SERVER_ON_LED(1)
-  SERVER_ON_LED(2)
-  SERVER_ON_LED(3)
+
+  repeatServerOnLED([this](long i) { offLED(i); }, m_outputs.size());
+  repeatServerOnLED([this](long i) { onLED(i);  }, m_outputs.size());
 
   m_server->begin();
 
   return true;
+}
+
+void DigitalGPIOControl::onLED(long index){
+  temp = "/" + String(m_outputs[index].pinName) + "on";
+  uri = temp.c_str();
+  m_server->on(uri, HTTP_GET, [this, index](AsyncWebServerRequest *request) { 
+    serverOnLED(m_outputs[index], HIGH, request); 
+  });
+}
+
+void DigitalGPIOControl::offLED(long index){
+  temp = "/" + String(m_outputs[index].pinName) + "off";
+  uri = temp.c_str();
+  m_server->on(uri, HTTP_GET, [this, index](AsyncWebServerRequest *request) { 
+    serverOnLED(m_outputs[index], LOW, request); 
+  });
+}
+
+void DigitalGPIOControl::repeatServerOnLED(onLED_t fn, long n){
+  for(long i = 0; i < n; i++){
+    fn(i);
+  }
 }
 
 void DigitalGPIOControl::SetOutputs(){
@@ -115,7 +141,7 @@ String DigitalGPIOControl::getLEDColor(const String& var) {
   });
 
   if(it != m_outputs.end())
-    if(it->state)
+    if(it->state == HIGH)
       return it->additionalData;
   
   return "gray"; 
@@ -123,11 +149,11 @@ String DigitalGPIOControl::getLEDColor(const String& var) {
 
 String DigitalGPIOControl::LEDControl(const String& var) {
   auto it = std::find_if(m_outputs.begin(), m_outputs.end(), [&var](const DigitalOutput& output){
-    return output.name == var;
+    return String(output.pinName) == var;
   });
 
   if(it != m_outputs.end()){
-    if(it->state)
+    if(it->state == HIGH)
       return "ON";
     else
       return "OFF";
@@ -157,4 +183,23 @@ void DigitalGPIOControl::initSerial(){
   Serial.begin(115200);
   Serial.print("\033[2J");  // Clear terminal
   Serial.print("\033[H");   // Move cursor to the top-left corner
+}
+
+String DigitalGPIOControl::getLEDData() {
+    // replace with new version
+    // StaticJsonDocument deprecated
+    StaticJsonDocument<512> jsonBuffer;  
+    JsonArray leds = jsonBuffer.to<JsonArray>(); 
+
+    for (auto &output : m_outputs) {
+        JsonObject led = leds.createNestedObject();  
+        led["id"]    = output.pinName;                  
+        led["color"] = output.state == HIGH ? output.additionalData : "gray"; 
+        led["name"]  = output.name;                   
+        led["state"] = output.state == HIGH ? "ON" : "OFF";         
+    }
+
+    String json;
+    serializeJson(jsonBuffer, json); 
+    return json; 
 }

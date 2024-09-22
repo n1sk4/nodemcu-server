@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>LED Control Server</title>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LED Control Server</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" href="style.css">
@@ -10,42 +11,59 @@
 <body>
   <h2>LED Control Server</h2>
   <div class="content">
-    <div class="card-grid">
-      <div class="card">
-
-        <p><i class="fas fa-lightbulb fa-2x" id="redLED" style="color:%RED%;"></i> LED1: <strong>%LED1%</strong></p>
-        <p>
-          <button onclick="toggleLED('led1on', 'red', 'redLED')" class="button">ON</button>
-          <button onclick="toggleLED('led1off', 'gray', 'redLED')" class="button button2">OFF</button>
-        </p>
-
-        <p><i class="fas fa-lightbulb fa-2x" id="greenLED" style="color:%GREEN%;"></i> LED2: <strong>%LED2%</strong></p>
-        <p>
-          <button onclick="toggleLED('led2on', 'limegreen', 'greenLED')" class="button">ON</button>
-          <button onclick="toggleLED('led2off', 'gray', 'greenLED')" class="button button2">OFF</button>
-        </p>
-
-        <p><i class="fas fa-lightbulb fa-2x" id="blueLED" style="color:%BLUE%;"></i> LED3: <strong>%LED3%</strong></p>
-        <p>
-          <button onclick="toggleLED('led3on', 'blue', 'blueLED')" class="button">ON</button>
-          <button onclick="toggleLED('led3off', 'gray', 'blueLED')" class="button button2">OFF</button>
-        </p>
-
-      </div>
+    <div class="card-grid" id="ledControls">
     </div>
   </div>
 
   <script>
+    // Fetch LED data from the server
+    function loadLEDsFromServer() {
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function() {
+        if (this.readyState === 4 && this.status === 200) {
+          const leds = JSON.parse(this.responseText);
+          renderLEDControls(leds);
+        }
+      };
+      xhttp.open("GET", "/getLeds", true);
+      xhttp.send();
+    }
+
+    function renderLEDControls(leds) {
+      const ledControlsContainer = document.getElementById('ledControls');
+      ledControlsContainer.innerHTML = '';
+
+      leds.forEach(led => {
+        const ledElement = document.createElement('div');
+        ledElement.classList.add('card');
+
+        ledElement.innerHTML = `
+          <p><i class="fas fa-lightbulb fa-2x" id="${led.name}" style="color:${led.color};"></i> ${led.name}: <strong>${led.state}</strong></p>
+          <p>
+            <button onclick="toggleLED('${led.id}on', '${led.color}', '${led.name}')" class="button">ON</button>
+            <button onclick="toggleLED('${led.id}off', 'gray', '${led.name}')" class="button button2">OFF</button>
+          </p>
+        `;
+
+        ledControlsContainer.appendChild(ledElement);
+      });
+    }
+
     function toggleLED(ledCommand, color, elementID) {
       var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-          location.reload();
+        if (this.readyState === 4 && this.status === 200) {
+          document.getElementById(elementID).style.color = color;
+          loadLEDsFromServer();
         }
       };
       xhttp.open("GET", "/" + ledCommand, true);
       xhttp.send();
     }
+
+    window.onload = function() {
+      loadLEDsFromServer();
+    };
   </script>
 </body>
 </html>
