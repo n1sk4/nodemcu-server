@@ -29,6 +29,7 @@ struct WiFiSettings{
 
 typedef std::vector<DigitalOutput> DigitalOutputs;
 typedef std::vector<uint8_t> States;
+typedef std::function<void(long)> onLED_t;
 
 class DigitalGPIOControl{
 public:
@@ -36,37 +37,30 @@ public:
   DigitalGPIOControl(DigitalOutputs& outputs, AsyncWebServer& server, WiFiSettings ws);
 
   bool init();
-  
-  void SetHigh();
-  void SetLow();
-  void SetHigh(DigitalOutput& output);
-  void SetLow(DigitalOutput& output);
-  States GetStates();
-  uint8_t GetState(const DigitalOutput& output);
-  bool IsItName(const String& var);
-  bool IsItAdditionalData(const String& var); 
+  void setHigh();
+  void setLow();
+  void setHigh(DigitalOutput& output);
+  void setLow(DigitalOutput& output);
+  States getStates();
+  uint8_t getState(const DigitalOutput& output);
 
-  //Server
-  void setSSID(const char& ssid);
-  void setPassword(const char& password);
-  String LEDControl(const String& var);
-  String getLEDColor(const String& var);
-  String processor(const String& var);
-  void serverOnLED(DigitalOutput& pin, uint8_t state, AsyncWebServerRequest *request);
-  void initSerial();
 private:
   DigitalOutputs  m_outputs;
   AsyncWebServer* m_server;
   WiFiSettings    m_WiFiSettings;
-  void SetOutputs();
+  
+  void setOutputs();
   String getLEDData();
-
-  const char* uri;
-  String temp;
+  void repeatServerOnLED(onLED_t fn, long n);
   void onLED(long index);
   void offLED(long index);
-  typedef std::function<void(long)> onLED_t;
-  void repeatServerOnLED(onLED_t fn, long n);
+  String ledControl(const String& var);
+  String getLEDColor(const String& var);
+  String processor(const String& var);
+  void serverOnLED(DigitalOutput& pin, uint8_t state, AsyncWebServerRequest *request);
+  bool isItName(const String& var);
+  bool isItAdditionalData(const String& var); 
+  void initSerial();
 };
 
 #endif

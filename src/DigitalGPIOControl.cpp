@@ -9,8 +9,8 @@ DigitalGPIOControl::DigitalGPIOControl(DigitalOutputs& outputs)
 }
 
 bool DigitalGPIOControl::init(){
-  SetOutputs();
-  SetLow();
+  setOutputs();
+  setLow();
   
   initSerial();
 
@@ -49,6 +49,7 @@ bool DigitalGPIOControl::init(){
     request->send(LittleFS, "/style.css", "text/css");
   });
 
+  // create server listeners for on/off change based on defined m_outputs list
   repeatServerOnLED([this](long i) { offLED(i); }, m_outputs.size());
   repeatServerOnLED([this](long i) { onLED(i);  }, m_outputs.size());
 
@@ -57,59 +58,43 @@ bool DigitalGPIOControl::init(){
   return true;
 }
 
-void DigitalGPIOControl::onLED(long index){
-  temp = "/" + String(m_outputs[index].pinName) + "on";
-  uri = temp.c_str();
-  m_server->on(uri, HTTP_GET, [this, index](AsyncWebServerRequest *request) { 
-    serverOnLED(m_outputs[index], HIGH, request); 
-  });
+void DigitalGPIOControl::initSerial(){
+  Serial.begin(115200);
+  Serial.print("\033[2J");  // Clear terminal
+  Serial.print("\033[H");   // Move cursor to the top-left corner
 }
 
-void DigitalGPIOControl::offLED(long index){
-  temp = "/" + String(m_outputs[index].pinName) + "off";
-  uri = temp.c_str();
-  m_server->on(uri, HTTP_GET, [this, index](AsyncWebServerRequest *request) { 
-    serverOnLED(m_outputs[index], LOW, request); 
-  });
-}
-
-void DigitalGPIOControl::repeatServerOnLED(onLED_t fn, long n){
-  for(long i = 0; i < n; i++){
-    fn(i);
-  }
-}
-
-void DigitalGPIOControl::SetOutputs(){
+void DigitalGPIOControl::setOutputs(){
   for(auto output : m_outputs){
     pinMode(output.pinName, OUTPUT);
   }
 }
 
-void DigitalGPIOControl::SetHigh(){
+void DigitalGPIOControl::setHigh(){
   for(auto output : m_outputs){
     digitalWrite(output.pinName, HIGH);
     output.state = HIGH;
   }
 }
 
-void DigitalGPIOControl::SetLow(){
+void DigitalGPIOControl::setLow(){
   for(auto output : m_outputs){
     digitalWrite(output.pinName, LOW);
     output.state = LOW;
   }
 }
 
-void DigitalGPIOControl::SetHigh(DigitalOutput& output){
+void DigitalGPIOControl::setHigh(DigitalOutput& output){
   digitalWrite(output.pinName, HIGH);
   output.state = HIGH;
 }
 
-void DigitalGPIOControl::SetLow(DigitalOutput& output){
+void DigitalGPIOControl::setLow(DigitalOutput& output){
   digitalWrite(output.pinName, LOW);
   output.state = LOW;
 }
 
-States DigitalGPIOControl::GetStates(){
+States DigitalGPIOControl::getStates(){
   States states;
   for(const auto& output : m_outputs){
     states.push_back(output.state);
@@ -117,18 +102,28 @@ States DigitalGPIOControl::GetStates(){
   return states;
 }
 
-uint8_t DigitalGPIOControl::GetState(const DigitalOutput& output){
+uint8_t DigitalGPIOControl::getState(const DigitalOutput& output){
   return output.state;
 }
 
-bool DigitalGPIOControl::IsItName(const String& var) {
+String DigitalGPIOControl::processor(const String& var) {
+  if (isItName(var)) 
+    return ledControl(var);
+  
+  if (isItAdditionalData(var))
+    return getLEDColor(var);
+
+  return String();
+}
+
+bool DigitalGPIOControl::isItName(const String& var) {
   auto it = find_if(m_outputs.begin(), m_outputs.end(), [&var](const DigitalOutput& output){
     return output.name == var;
   });
   return it != m_outputs.end();
 }
 
-bool DigitalGPIOControl::IsItAdditionalData(const String& var) {
+bool DigitalGPIOControl::isItAdditionalData(const String& var) {
   auto it = find_if(m_outputs.begin(), m_outputs.end(), [&var](const DigitalOutput& output){
     return output.additionalData == var;
   });
@@ -147,7 +142,7 @@ String DigitalGPIOControl::getLEDColor(const String& var) {
   return "gray"; 
 }
 
-String DigitalGPIOControl::LEDControl(const String& var) {
+String DigitalGPIOControl::ledControl(const String& var) {
   auto it = std::find_if(m_outputs.begin(), m_outputs.end(), [&var](const DigitalOutput& output){
     return String(output.pinName) == var;
   });
@@ -162,37 +157,40 @@ String DigitalGPIOControl::LEDControl(const String& var) {
   return String();
 }
 
-String DigitalGPIOControl::processor(const String& var) {
-  if (IsItName(var)) 
-    return LEDControl(var);
-  
-  if (IsItAdditionalData(var))
-    return getLEDColor(var);
+void DigitalGPIOControl::onLED(long index){
+  String uriStr = "/" + String(m_outputs[index].pinName) + "on";
+  const char* uri = uriStr.c_str();
+  m_server->on(uri, HTTP_GET, [this, index](AsyncWebServerRequest *request) { 
+    serverOnLED(m_outputs[index], HIGH, request); 
+  });
+}
 
-  return String();
+void DigitalGPIOControl::offLED(long index){
+  String uriStr = "/" + String(m_outputs[index].pinName) + "off";
+  const char* uri = uriStr.c_str();
+  m_server->on(uri, HTTP_GET, [this, index](AsyncWebServerRequest *request) { 
+    serverOnLED(m_outputs[index], LOW, request); 
+  });
+}
+
+void DigitalGPIOControl::repeatServerOnLED(onLED_t fn, long n){
+  for(long i = 0; i < n; i++){
+    fn(i);
+  }
 }
 
 void DigitalGPIOControl::serverOnLED(DigitalOutput& pin, uint8_t state, AsyncWebServerRequest *request){
-  (state == HIGH) ? SetHigh(pin) : SetLow(pin); 
+  (state == HIGH) ? setHigh(pin) : setLow(pin); 
   auto boundProcessor = std::bind(&DigitalGPIOControl::processor, this, std::placeholders::_1);
   request->send(LittleFS, "/index.html", String(), false, boundProcessor);
 }
 
-
-void DigitalGPIOControl::initSerial(){
-  Serial.begin(115200);
-  Serial.print("\033[2J");  // Clear terminal
-  Serial.print("\033[H");   // Move cursor to the top-left corner
-}
-
 String DigitalGPIOControl::getLEDData() {
-    // replace with new version
-    // StaticJsonDocument deprecated
-    StaticJsonDocument<512> jsonBuffer;  
+    JsonDocument jsonBuffer;  
     JsonArray leds = jsonBuffer.to<JsonArray>(); 
 
     for (auto &output : m_outputs) {
-        JsonObject led = leds.createNestedObject();  
+        JsonObject led = leds.add<JsonObject>();  
         led["id"]    = output.pinName;                  
         led["color"] = output.state == HIGH ? output.additionalData : "gray"; 
         led["name"]  = output.name;                   
