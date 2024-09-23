@@ -1,6 +1,10 @@
 # nodemcu-server
-LED light control using a NodeMCU as the server
+Digital GPIO control using nodeMCU ESP8266
+Dinamically creates buttons for setting GPIO to HIGH or LOW over WiFi,
 
+based on list defined in the main loop:
+
+https://github.com/n1sk4/nodemcu-server/blob/d76a0f8e928a25c90dd90976918ed83d56a3e8e4/src/main.cpp#L7-L12
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/47545000-7c17-4bfe-9a0c-e8d154ff9865" alt="drawing" width="400"/> __  <img src="https://github.com/user-attachments/assets/ce7e18ef-509f-4391-b2da-9d880a299352" alt="drawing" width="400"/>
@@ -21,12 +25,9 @@ Using VS Code:
    Open PIO extension in VS Code
      * -> Project Tasks -> Platform -> Build Filesystem Image
      * -> Project Tasks -> Platform -> Upload Filesystem Image
- * Change these two lines to match your WiFi and it's password:
- https://github.com/n1sk4/nodemcu-server/blob/d1f40ccb82a65ed970c7abc552b5c00be45f87e3/src/main.cpp#L8-L9
-
- * Change D5, D6, D7 with your GPIO's here:
- https://github.com/n1sk4/nodemcu-server/blob/18c87bc8783e3671fa59fd175468bad393550cb9/src/main.cpp#L16-L18
- * Build and Upload the project
-
-LED's in the project are connected as seen in the schematics bellow (I had a RGB LED that was configured with a common anode)
-![nodemcu-server](https://github.com/user-attachments/assets/d19526ea-40ce-4efc-8679-5ae46fcfa7a6)
+ * Change WiFi UUID and Password here:
+   https://github.com/n1sk4/nodemcu-server/blob/d76a0f8e928a25c90dd90976918ed83d56a3e8e4/src/main.cpp#L15-L16
+ * Define Pinout based on your needs:
+   https://github.com/n1sk4/nodemcu-server/blob/d76a0f8e928a25c90dd90976918ed83d56a3e8e4/src/main.cpp#L7-L12
+   
+   
