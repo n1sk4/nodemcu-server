@@ -15,6 +15,8 @@
 #include <ArduinoJson.h>
 #include <functional>
 
+#include "..\include\DisplayDefinitions.h"
+
 struct DigitalOutput{
   uint8_t pinName;
   String  name;
@@ -35,6 +37,7 @@ class DigitalGPIOControl{
 public:
   DigitalGPIOControl(DigitalOutputs& outputs);
   DigitalGPIOControl(DigitalOutputs& outputs, AsyncWebServer& server, WiFiSettings ws);
+  DigitalGPIOControl(DigitalOutputs& outputs, AsyncWebServer& server, WiFiSettings ws, Adafruit_SSD1306& display);
 
   bool init();
   void setHigh();
@@ -48,6 +51,7 @@ private:
   DigitalOutputs  m_outputs;
   AsyncWebServer* m_server;
   WiFiSettings    m_WiFiSettings;
+  Adafruit_SSD1306* m_display;
   
   void setOutputs();
   String getLEDData();
@@ -61,6 +65,8 @@ private:
   bool isItName(const String& var);
   bool isItAdditionalData(const String& var); 
   void initSerial();
+  void initServer();
+  void initDisplay();
 };
 
 #endif

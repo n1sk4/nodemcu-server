@@ -1,5 +1,9 @@
 #include "..\include\DigitalGPIOControl.h"
 
+DigitalGPIOControl::DigitalGPIOControl(DigitalOutputs& outputs, AsyncWebServer& server, WiFiSettings ws, Adafruit_SSD1306& display)
+ : m_outputs(outputs), m_server(&server), m_WiFiSettings(ws), m_display(&display){
+}
+
 DigitalGPIOControl::DigitalGPIOControl(DigitalOutputs& outputs, AsyncWebServer& server, WiFiSettings ws)
  : m_outputs(outputs), m_server(&server), m_WiFiSettings(ws){
 }
@@ -13,27 +17,54 @@ bool DigitalGPIOControl::init(){
   setLow();
   
   initSerial();
-
+  initDisplay();
+  
   if (!LittleFS.begin()) {
     Serial.println("An Error has occurred while mounting LittleFS");
     return false;
   }
-  
+
+  initServer();
+
+  return true;
+}
+
+void DigitalGPIOControl::initSerial(){
+  Serial.begin(115200);
+  Serial.print("\033[2J");  // Clear terminal
+  Serial.print("\033[H");   // Move cursor to the top-left corner
+}
+
+void DigitalGPIOControl::initServer(){
   if(!m_server || !m_WiFiSettings.ssid || !m_WiFiSettings.password){
     Serial.println("An Error has occurred while setting up server");
-    return true;
+    return;
   }
 
   WiFi.begin(m_WiFiSettings.ssid, m_WiFiSettings.password);
   Serial.println("Connecting to WiFi");
+  int frame = 0;
   while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
+    m_display->clearDisplay();
+    m_display->drawBitmap(32, 0, LoadingWiFiAnimation[frame], FRAME_WIDTH, FRAME_HEIGHT, 1);
+    m_display->display();
+    frame = (frame + 1) % FRAME_COUNT;
+    delay(42);
+
     Serial.print(".");
   }
+  
+  auto localIP = WiFi.localIP();
+  Serial.print("\nClient available at: ");
+  Serial.print(localIP);
   Serial.print("\n");
-  Serial.print("Client available at: ");
-  Serial.print(WiFi.localIP());
-  Serial.print("\n");
+  m_display->setTextSize(1);
+  m_display->setTextColor(WHITE);
+  m_display->setCursor(0, 0);
+  m_display->clearDisplay();
+  m_display->print("\nClient available at:\n");
+  m_display->print(localIP);
+  m_display->display();
 
   m_server->on("/", HTTP_GET, [&](AsyncWebServerRequest *request) {
     auto boundProcessor = std::bind(&DigitalGPIOControl::processor, this, std::placeholders::_1);
@@ -54,14 +85,13 @@ bool DigitalGPIOControl::init(){
   repeatServerOnLED([this](long i) { onLED(i);  }, m_outputs.size());
 
   m_server->begin();
-
-  return true;
 }
 
-void DigitalGPIOControl::initSerial(){
-  Serial.begin(115200);
-  Serial.print("\033[2J");  // Clear terminal
-  Serial.print("\033[H");   // Move cursor to the top-left corner
+void DigitalGPIOControl::initDisplay(){
+  if(!m_display)
+    return;
+  
+  m_display->begin(SSD1306_SWITCHCAPVCC, SCREEN_I2C_ADDR);
 }
 
 void DigitalGPIOControl::setOutputs(){
